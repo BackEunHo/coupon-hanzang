@@ -1,0 +1,8 @@
+/docs
+/build/
+/.gradle/
+/.env
+/swagger
+.gitkeep
+README.md
+.cmuxterm
