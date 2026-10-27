@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: coupon_hanjang
+      POSTGRES_USER: coupon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coupon -d coupon_hanjang"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/coupon_hanjang
+      SPRING_DATASOURCE_USERNAME: coupon
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      APP_ALLOWED_ORIGIN: ${APP_ALLOWED_ORIGIN:?Set APP_ALLOWED_ORIGIN in .env}
+      APP_COOKIE_SECURE: ${APP_COOKIE_SECURE:-true}
+      APP_PHONE_ENCRYPTION_KEY: ${APP_PHONE_ENCRYPTION_KEY:?Set APP_PHONE_ENCRYPTION_KEY in .env}
+      APP_PHONE_LOOKUP_KEY: ${APP_PHONE_LOOKUP_KEY:?Set APP_PHONE_LOOKUP_KEY in .env}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  session:
+    timeout: 24h
+    jdbc:
+      initialize-schema: never
+  flyway:
+    enabled: true
+app:
+  allowed-origin: ${APP_ALLOWED_ORIGIN}
+  cookie:
+    secure: ${APP_COOKIE_SECURE:true}
+  phone:
+    encryption-key: ${APP_PHONE_ENCRYPTION_KEY}
+    lookup-key: ${APP_PHONE_LOOKUP_KEY}
