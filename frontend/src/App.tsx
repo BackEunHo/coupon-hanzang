@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { AuthPage, ConfirmPage, WelcomePage, planLink } from './AuthPages'
+import { plans } from './flow.mjs'
 
 const pricingHref = '/pricing/'
 
@@ -27,7 +29,8 @@ function Header({ pricing = false }: { pricing?: boolean }) {
           <a href={pricing ? '/#features' : '#features'} onClick={() => setOpen(false)}>주요 기능</a>
           <a href={pricingHref} onClick={() => setOpen(false)}>요금 안내</a>
         </nav>
-        <a className="header-cta" href={pricingHref}>시작하기 <Arrow diagonal /></a>
+        <a className="header-login" href="/login/">로그인</a>
+        <a className="header-cta" href="/signup/">회원가입 <Arrow diagonal /></a>
         <button
           className="menu-toggle"
           type="button"
@@ -44,13 +47,14 @@ function Header({ pricing = false }: { pricing?: boolean }) {
         <a href={pricing ? '/#how-it-works' : '#how-it-works'} onClick={() => setOpen(false)}>이용 방법</a>
         <a href={pricing ? '/#features' : '#features'} onClick={() => setOpen(false)}>주요 기능</a>
         <a href={pricingHref} onClick={() => setOpen(false)}>요금 안내</a>
-        <a href={pricingHref} onClick={() => setOpen(false)}>시작하기 <Arrow diagonal /></a>
+        <a href="/login/" onClick={() => setOpen(false)}>로그인</a>
+        <a href="/signup/" onClick={() => setOpen(false)}>회원가입 <Arrow diagonal /></a>
       </div>
     </header>
   )
 }
 
-function PrimaryLink({ children, href = pricingHref, light = false }: { children: React.ReactNode; href?: string; light?: boolean }) {
+function PrimaryLink({ children, href = '/signup/', light = false }: { children: React.ReactNode; href?: string; light?: boolean }) {
   return <a className={`primary-link ${light ? 'primary-link-light' : ''}`} href={href}>{children}<Arrow diagonal /></a>
 }
 
@@ -124,12 +128,6 @@ function LandingPage() {
             <img src="/cafe-coupon.jpg" alt="카페 직원이 손님에게 빈 쿠폰 카드를 건네는 모습" className="hero-photo" fetchPriority="high" />
             <div className="hero-photo-caption">가게와 손님 사이, 다음 방문을 위한 작은 약속.</div>
           </div>
-        </section>
-
-        <section className="statement page-width" aria-labelledby="statement-title">
-          <p className="section-label">쿠폰한장이 하는 일</p>
-          <h2 id="statement-title">쿠폰 발급부터<br /><span>사용 확인까지.</span></h2>
-          <p>리뷰 이벤트 이외에 무엇을 할지 고민된다면, 다음 방문에 사용할 쿠폰을 준비해 보세요. 쿠폰한장은 작은 가게가 쿠폰을 직접 발급하고 사용 현황을 관리할 수 있도록 돕습니다.</p>
         </section>
 
         <section className="workflow" id="how-it-works" aria-labelledby="workflow-title">
@@ -240,14 +238,16 @@ function PricingPage() {
         <section className="pricing-hero page-width">
           <p className="section-label">요금 안내</p>
           <h1>우리 가게에 맞는<br />쿠폰 요금제.</h1>
-          <p>세 가지 요금 방식을 준비 중입니다. 가격과 문자 발송 조건은 확정 후 안내합니다.</p>
+          <p>요금은 임시로 표시한 예시이며, 문자 발송 조건은 추후 안내합니다.</p>
         </section>
-        <section className="pricing-content page-width" aria-label="준비 중인 요금제">
-          <div className="pricing-plan"><h2>무료 요금제</h2><p>월 문자 발송 한도 안에서 쿠폰을 발급하는 방식입니다.</p><small>월 발송 한도 · 확정 전</small></div>
-          <div className="pricing-plan"><h2>월 요금제</h2><p>월 이용료를 내고 쿠폰 발행 건수 제한 없이 사용하는 방식입니다.</p><small>월 이용료·문자 제공 범위 · 확정 전</small></div>
-          <div className="pricing-plan"><h2>월 종량제</h2><p>무료 한도를 넘긴 사용량에 따라 요금을 내는 방식입니다.</p><small>사용량당 요금 · 확정 전</small></div>
+        <section className="pricing-content page-width" aria-label="요금제">
+          {Object.entries(plans).map(([id, plan]) => <div className="pricing-plan" key={id}>
+            <div><h2>{plan.name}</h2><p>{plan.description}</p></div>
+            <small>문자 발송 조건 · 미정</small>
+            <a className="price-button" href={planLink(id)} aria-label={`${plan.name} ${plan.price}, 요금제 확인`}>{plan.price} <Arrow /></a>
+          </div>)}
         </section>
-        <div className="pricing-note page-width"><strong>서비스 신청은 준비 중입니다.</strong><p>요금과 신청 절차가 확정되면 이 페이지에서 안내하겠습니다.</p><a className="text-link" href="/">서비스 소개로 돌아가기 <Arrow /></a></div>
+        <div className="pricing-note page-width"><strong>표시된 요금은 임시 가격입니다.</strong><p>문자 발송 조건과 실제 요금은 확정 후 안내합니다. 요금제 신청과 결제는 준비 중입니다.</p><a className="text-link" href="/signup/">회원가입 <Arrow /></a><span> · </span><a className="text-link" href="/login/">로그인 <Arrow /></a></div>
       </main>
       <Footer />
     </>
@@ -259,5 +259,11 @@ function Footer() {
 }
 
 export default function App() {
-  return window.location.pathname.startsWith('/pricing') ? <PricingPage /> : <LandingPage />
+  const path = window.location.pathname
+  if (path.startsWith('/pricing/confirm')) return <ConfirmPage />
+  if (path.startsWith('/pricing')) return <PricingPage />
+  if (path.startsWith('/signup')) return <AuthPage mode="signup" />
+  if (path.startsWith('/login')) return <AuthPage mode="login" />
+  if (path.startsWith('/welcome')) return <WelcomePage />
+  return <LandingPage />
 }

@@ -23,12 +23,14 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Clock;
 import java.util.List;
 
-@RestController(value = "/api/v1/auth")
+@RestController
+@RequestMapping("/api/v1/auth")
 public class AuthController {
     private final AuthService service;
     private final Clock clock;
@@ -62,7 +64,7 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/me/password")
+    @PatchMapping("/password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody PasswordChangeRequest input,
             HttpServletRequest request) {
