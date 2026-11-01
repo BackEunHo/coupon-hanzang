@@ -9,7 +9,7 @@ export function selectedPlan(search) {
 }
 export function authDestination(search) {
   const plan = selectedPlan(search)
-  return plan ? `/pricing/confirm/?plan=${plan}` : '/welcome/'
+  return plan ? `/pricing/confirm/?plan=${plan}` : '/manage/'
 }
 export function validateSignup(name, phone, password, confirmation) {
   if (!name.trim() || name.trim().length > 100) return '가게 이름을 1~100자로 입력해 주세요.'

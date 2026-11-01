@@ -15,6 +15,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        manage: fileURLToPath(new URL('./manage/index.html', import.meta.url)),
         pricing: fileURLToPath(new URL('./pricing/index.html', import.meta.url)),
         signup: fileURLToPath(new URL('./signup/index.html', import.meta.url)),
         login: fileURLToPath(new URL('./login/index.html', import.meta.url)),

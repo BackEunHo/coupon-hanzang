@@ -6,7 +6,8 @@ test('only known plans can be resumed after authentication', () => {
   assert.equal(selectedPlan('?plan=monthly'), 'monthly')
   assert.equal(selectedPlan('?plan=unknown'), null)
   assert.equal(authDestination('?plan=monthly'), '/pricing/confirm/?plan=monthly')
-  assert.equal(authDestination('?plan=https://bad.example'), '/welcome/')
+  assert.equal(authDestination('?plan=https://bad.example'), '/manage/')
+  assert.equal(authDestination('?returnTo=https://bad.example'), '/manage/')
 })
 
 test('signup validates required fields and matching passwords', () => {
