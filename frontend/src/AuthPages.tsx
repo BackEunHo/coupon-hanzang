@@ -64,8 +64,8 @@ export function ConfirmPage() {
   const plan = id ? plans[id] : null
   if (!plan) return <Shell><div className="auth-card"><h1>요금제를 확인할 수 없습니다</h1><a href="/pricing/">요금 안내로 돌아가기</a></div></Shell>
   if (!recentlySignedIn()) return <Shell><div className="auth-card"><h1>로그인이 필요합니다</h1><p className="auth-intro">선택한 요금제를 확인하려면 로그인해 주세요.</p><a className="auth-submit auth-action" href={`/login/?plan=${id}`}>로그인</a></div></Shell>
-  return <Shell><div className="auth-card"><p className="section-label">요금제 확인</p><h1>{plan.name}</h1><p className="plan-price">{plan.price}</p><p>{plan.description}</p><div className="plan-notice"><strong>임시 가격입니다</strong><p>문자 발송 조건은 미정이며, 요금제 신청과 결제는 준비 중입니다. 이 화면에서 요금제가 적용되거나 결제되지 않습니다.</p></div><a className="text-link" href="/pricing/">다른 요금제 보기 →</a></div></Shell>
+  return <Shell><div className="auth-card"><p className="section-label">요금제 확인</p><h1>{plan.name}</h1><p className="plan-price">{plan.price}</p><p>{plan.description}</p><div className="plan-notice"><strong>임시 가격입니다</strong><p>문자 발송 조건은 미정이며, 요금제 신청과 결제는 준비 중입니다. 이 화면에서 요금제가 적용되거나 결제되지 않습니다.</p></div><a className="auth-submit auth-action" href="/manage/">쿠폰 관리로 이동</a><a className="text-link" href="/pricing/">다른 요금제 보기 →</a></div></Shell>
 }
 export function WelcomePage() {
-  return <Shell><div className="auth-card"><p className="section-label">쿠폰한장</p><h1>환영합니다</h1><p className="auth-intro">로그인했습니다. 서비스 이용과 요금제 신청은 준비 중입니다.</p><a className="auth-submit auth-action" href="/pricing/">요금 안내 보기</a></div></Shell>
+  return <Shell><div className="auth-card"><p className="section-label">쿠폰한장</p><h1>환영합니다</h1><p className="auth-intro">템플릿을 만들고 쿠폰 발급 내역을 관리해 보세요.</p><a className="auth-submit auth-action" href="/manage/">쿠폰 관리로 이동</a></div></Shell>
 }

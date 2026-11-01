@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AuthPage, ConfirmPage, WelcomePage, planLink } from './AuthPages'
 import { plans } from './flow.mjs'
+import { ManagementPage } from './manage/ManagementPage'
 
 const pricingHref = '/pricing/'
 
@@ -260,6 +261,7 @@ function Footer() {
 
 export default function App() {
   const path = window.location.pathname
+  if (path === '/manage' || path.startsWith('/manage/')) return <ManagementPage />
   if (path.startsWith('/pricing/confirm')) return <ConfirmPage />
   if (path.startsWith('/pricing')) return <PricingPage />
   if (path.startsWith('/signup')) return <AuthPage mode="signup" />
