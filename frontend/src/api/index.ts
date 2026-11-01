@@ -1,10 +1,11 @@
 import { createApiClient } from './client.mjs'
 import type { Coupon, CouponFields, CouponFilters, IssueRequest, Page, Template } from './types'
+import { clearSignedIn } from '../auth/session.mjs'
 
 const request = createApiClient({
   base: import.meta.env.VITE_API_BASE_URL || '',
   onUnauthorized() {
-    sessionStorage.removeItem('couponhanjang-signed-in-until')
+    clearSignedIn()
     window.location.replace('/login/?returnTo=manage')
   },
 })
@@ -21,5 +22,4 @@ export const api = {
   coupons: (page: number, filters: CouponFilters, signal?: AbortSignal) => request<Page<Coupon>>(`/api/v1/coupons?${query(page, filters)}`, { signal }),
   coupon: (id: string, signal?: AbortSignal) => request<Coupon>(`/api/v1/coupons/${encodeURIComponent(id)}`, { signal }),
   issue: (body: IssueRequest, key: string) => request<Coupon>('/api/v1/coupons', { method: 'POST', body, key }),
-  logout: () => request<void>('/api/v1/auth/logout', { method: 'POST' }),
 }

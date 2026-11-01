@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { AuthPage, ConfirmPage, WelcomePage, planLink } from './AuthPages'
 import { plans } from './flow.mjs'
 import { ManagementPage } from './manage/ManagementPage'
+import { useSession } from './auth/useSession'
+import { signOut } from './auth/actions'
+import { errorText } from './api/client.mjs'
 
 const pricingHref = '/pricing/'
 
@@ -18,8 +21,18 @@ function Arrow({ diagonal = false }: { diagonal?: boolean }) {
   return <span aria-hidden="true" className="arrow">{diagonal ? '↗' : '→'}</span>
 }
 
-function Header({ pricing = false }: { pricing?: boolean }) {
+export function Header({ pricing = false }: { pricing?: boolean }) {
   const [open, setOpen] = useState(false)
+  const signedIn = useSession()
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
+  async function logout() {
+    if (loggingOut) return
+    setLoggingOut(true); setLogoutError('')
+    try { await signOut(); setOpen(false) }
+    catch (error) { setLogoutError(errorText(error)) }
+    finally { setLoggingOut(false) }
+  }
 
   return (
     <header className="site-header">
@@ -30,8 +43,7 @@ function Header({ pricing = false }: { pricing?: boolean }) {
           <a href={pricing ? '/#features' : '#features'} onClick={() => setOpen(false)}>주요 기능</a>
           <a href={pricingHref} onClick={() => setOpen(false)}>요금 안내</a>
         </nav>
-        <a className="header-login" href="/login/">로그인</a>
-        <a className="header-cta" href="/signup/">회원가입 <Arrow diagonal /></a>
+        {signedIn ? <button className="header-login header-logout" type="button" disabled={loggingOut} onClick={logout}>{loggingOut ? '로그아웃 중…' : '로그아웃'}</button> : <><a className="header-login" href="/login/">로그인</a><a className="header-cta" href="/signup/">회원가입 <Arrow diagonal /></a></>}
         <button
           className="menu-toggle"
           type="button"
@@ -48,9 +60,9 @@ function Header({ pricing = false }: { pricing?: boolean }) {
         <a href={pricing ? '/#how-it-works' : '#how-it-works'} onClick={() => setOpen(false)}>이용 방법</a>
         <a href={pricing ? '/#features' : '#features'} onClick={() => setOpen(false)}>주요 기능</a>
         <a href={pricingHref} onClick={() => setOpen(false)}>요금 안내</a>
-        <a href="/login/" onClick={() => setOpen(false)}>로그인</a>
-        <a href="/signup/" onClick={() => setOpen(false)}>회원가입 <Arrow diagonal /></a>
+        {signedIn ? <button className="mobile-logout" type="button" disabled={loggingOut} onClick={logout}>{loggingOut ? '로그아웃 중…' : '로그아웃'}</button> : <><a href="/login/" onClick={() => setOpen(false)}>로그인</a><a href="/signup/" onClick={() => setOpen(false)}>회원가입 <Arrow diagonal /></a></>}
       </div>
+      {logoutError && <p className="header-auth-error page-width" role="alert">{logoutError}</p>}
     </header>
   )
 }
