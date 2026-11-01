@@ -43,13 +43,20 @@ class AuthApiIntegrationTest {
     private static final String PHONE = "01012345678";
     private static final String PASSWORD = "old-password-123";
 
-    @Autowired MockMvc mvc;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired MutableClock clock;
-    @Autowired EntityManagerFactory entityManagerFactory;
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    JdbcTemplate jdbc;
+    @Autowired
+    MutableClock clock;
+    @Autowired
+    EntityManagerFactory entityManagerFactory;
 
     @BeforeEach
     void reset() {
+        jdbc.update("delete from coupons");
+        jdbc.update("delete from customers");
+        jdbc.update("delete from coupon_templates");
         jdbc.update("delete from operators");
         jdbc.update("delete from merchants");
         clock.set(Instant.parse("2026-10-25T00:00:00Z"));
@@ -59,13 +66,14 @@ class AuthApiIntegrationTest {
     void signupCreatesUnverifiedMerchantAndRejectsDuplicatePhone() throws Exception {
         MvcResult first = signup(PHONE, PASSWORD);
         assertThat(first.getResponse().getCookie("SESSION")).isNotNull();
-        assertThat(jdbc.queryForObject("select count(*) from operators where phone_verified_at is null", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from operators where phone_verified_at is null", Integer.class))
+                .isEqualTo(1);
 
         mvc.perform(post("/api/v1/auth/signup")
                 .header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
                 .content(signupBody(PHONE, PASSWORD)))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.code").value("PHONE_ALREADY_REGISTERED"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PHONE_ALREADY_REGISTERED"));
     }
 
     @Test
@@ -74,18 +82,18 @@ class AuthApiIntegrationTest {
         mvc.perform(post("/api/v1/auth/login")
                 .header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
                 .content(loginBody(PHONE, "wrong-password")))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
 
         Cookie session = sessionOf(mvc.perform(post("/api/v1/auth/login")
                 .header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
                 .content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isOk()).andReturn().getResponse());
+                .andExpect(status().isOk()).andReturn().getResponse());
 
         mvc.perform(post("/api/v1/auth/logout").header("Origin", ORIGIN).cookie(session))
-            .andExpect(status().isNoContent());
-        mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(session)
+                .andExpect(status().isNoContent());
+        mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "new-password-123")))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -94,20 +102,20 @@ class AuthApiIntegrationTest {
         Cookie secondSession = sessionOf(mvc.perform(post("/api/v1/auth/login")
                 .header("Origin", ORIGIN).contentType(MediaType.APPLICATION_JSON)
                 .content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isOk()).andReturn().getResponse());
+                .andExpect(status().isOk()).andReturn().getResponse());
 
-        mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(secondSession)
+        mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(secondSession)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "new-password-123")))
-            .andExpect(status().isNoContent());
-        mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(firstSession)
+                .andExpect(status().isNoContent());
+        mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(firstSession)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "another-password-123")))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, "new-password-123")))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -115,25 +123,25 @@ class AuthApiIntegrationTest {
         Cookie session = sessionOf(signup(PHONE, PASSWORD).getResponse());
         mvc.perform(post("/api/v1/auth/withdrawal").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"" + PASSWORD + "\"}"))
-            .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent());
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/auth/signup").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(signupBody(PHONE, PASSWORD)))
-            .andExpect(status().isCreated());
+                .andExpect(status().isCreated());
     }
 
     @Test
     void absoluteDeadlineAndOriginGuardRejectRequests() throws Exception {
         Cookie session = sessionOf(signup(PHONE, PASSWORD).getResponse());
-        mvc.perform(patch("/api/v1/me/password").cookie(session)
+        mvc.perform(patch("/api/v1/auth/password").cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "new-password-123")))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
         clock.set(Instant.parse("2026-10-26T00:00:00Z"));
-        mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(session)
+        mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "new-password-123")))
-            .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -142,20 +150,20 @@ class AuthApiIntegrationTest {
         for (int attempt = 1; attempt <= 4; attempt++) {
             mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                     .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, "wrong-password")))
-                .andExpect(status().isUnauthorized());
+                    .andExpect(status().isUnauthorized());
         }
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, "wrong-password")))
-            .andExpect(status().isTooManyRequests())
-            .andExpect(jsonPath("$.code").value("LOGIN_RATE_LIMITED"));
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("LOGIN_RATE_LIMITED"));
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests());
 
         clock.set(Instant.parse("2026-10-25T00:15:00Z"));
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -174,12 +182,16 @@ class AuthApiIntegrationTest {
 
             stale.changePassword("stale-password-hash");
             assertThatThrownBy(() -> stalePasswordChange.getTransaction().commit())
-                .isInstanceOf(jakarta.persistence.RollbackException.class);
-            assertThat(jdbc.queryForObject("select count(*) from operators where id = ? and phone_lookup is null and phone_ciphertext is null and password_hash is null", Integer.class, operatorId))
-                .isEqualTo(1);
+                    .isInstanceOf(jakarta.persistence.RollbackException.class);
+            assertThat(jdbc.queryForObject(
+                    "select count(*) from operators where id = ? and phone_lookup is null and phone_ciphertext is null and password_hash is null",
+                    Integer.class, operatorId))
+                    .isEqualTo(1);
         } finally {
-            if (withdrawal.getTransaction().isActive()) withdrawal.getTransaction().rollback();
-            if (stalePasswordChange.getTransaction().isActive()) stalePasswordChange.getTransaction().rollback();
+            if (withdrawal.getTransaction().isActive())
+                withdrawal.getTransaction().rollback();
+            if (stalePasswordChange.getTransaction().isActive())
+                stalePasswordChange.getTransaction().rollback();
             withdrawal.close();
             stalePasswordChange.close();
         }
@@ -190,14 +202,14 @@ class AuthApiIntegrationTest {
         Cookie stale = sessionOf(signup(PHONE, PASSWORD).getResponse());
         Cookie current = sessionOf(mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, PASSWORD)))
-            .andExpect(status().isOk()).andReturn().getResponse());
-        mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(current)
+                .andExpect(status().isOk()).andReturn().getResponse());
+        mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(current)
                 .contentType(MediaType.APPLICATION_JSON).content(passwordBody(PASSWORD, "new-password-123")))
-            .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent());
 
         mvc.perform(post("/api/v1/auth/login").header("Origin", ORIGIN).cookie(stale)
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody(PHONE, "new-password-123")))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -206,44 +218,47 @@ class AuthApiIntegrationTest {
                 .header("Origin", ORIGIN)
                 .header("Access-Control-Request-Method", "POST")
                 .header("Access-Control-Request-Headers", "content-type"))
-            .andExpect(status().isOk())
-            .andExpect(result -> assertThat(result.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo(ORIGIN))
-            .andExpect(result -> assertThat(result.getResponse().getHeader("Access-Control-Allow-Credentials")).isEqualTo("true"));
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getHeader("Access-Control-Allow-Origin"))
+                        .isEqualTo(ORIGIN))
+                .andExpect(result -> assertThat(result.getResponse().getHeader("Access-Control-Allow-Credentials"))
+                        .isEqualTo("true"));
     }
 
     @Test
     void passwordConfirmationAttemptsAreThrottledAcrossSensitiveEndpoints() throws Exception {
         Cookie session = sessionOf(signup(PHONE, PASSWORD).getResponse());
         for (int attempt = 0; attempt < 2; attempt++) {
-            mvc.perform(patch("/api/v1/me/password").header("Origin", ORIGIN).cookie(session)
-                    .contentType(MediaType.APPLICATION_JSON).content(passwordBody("wrong-password", "new-password-123")))
-                .andExpect(status().isBadRequest());
+            mvc.perform(patch("/api/v1/auth/password").header("Origin", ORIGIN).cookie(session)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(passwordBody("wrong-password", "new-password-123")))
+                    .andExpect(status().isBadRequest());
         }
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post("/api/v1/auth/withdrawal").header("Origin", ORIGIN).cookie(session)
                     .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"wrong-password\"}"))
-                .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest());
         }
         mvc.perform(post("/api/v1/auth/withdrawal").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"wrong-password\"}"))
-            .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests());
         mvc.perform(post("/api/v1/auth/withdrawal").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"" + PASSWORD + "\"}"))
-            .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests());
 
         clock.set(Instant.parse("2026-10-25T00:15:00Z"));
         mvc.perform(post("/api/v1/auth/withdrawal").header("Origin", ORIGIN).cookie(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"" + PASSWORD + "\"}"))
-            .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent());
     }
 
     private MvcResult signup(String phone, String password) throws Exception {
         return mvc.perform(post("/api/v1/auth/signup").header("Origin", ORIGIN)
                 .contentType(MediaType.APPLICATION_JSON).content(signupBody(phone, password)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.merchantName").value("우리동네 커피"))
-            .andExpect(jsonPath("$.phoneVerified").value(false))
-            .andReturn();
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.merchantName").value("우리동네 커피"))
+                .andExpect(jsonPath("$.phoneVerified").value(false))
+                .andReturn();
     }
 
     private static Cookie sessionOf(MockHttpServletResponse response) {
@@ -266,7 +281,8 @@ class AuthApiIntegrationTest {
 
     @TestConfiguration
     static class ClockConfig {
-        @Bean @Primary
+        @Bean
+        @Primary
         MutableClock testClock() {
             return new MutableClock();
         }
@@ -275,9 +291,23 @@ class AuthApiIntegrationTest {
     static class MutableClock extends Clock {
         private final AtomicReference<Instant> current = new AtomicReference<>(Instant.EPOCH);
 
-        void set(Instant instant) { current.set(instant); }
-        @Override public ZoneId getZone() { return ZoneId.of("UTC"); }
-        @Override public Clock withZone(ZoneId zone) { return this; }
-        @Override public Instant instant() { return current.get(); }
+        void set(Instant instant) {
+            current.set(instant);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneId.of("UTC");
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return current.get();
+        }
     }
 }
