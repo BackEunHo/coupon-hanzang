@@ -16,3 +16,11 @@ app:
   phone:
     encryption-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     lookup-key: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+  customer-phone:
+    encryption-key: AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=
+    lookup-key: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
+  coupon-code:
+    encryption-key: BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=
+    mac-key: BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU=
+  quota:
+    monthly-message-limit: 100

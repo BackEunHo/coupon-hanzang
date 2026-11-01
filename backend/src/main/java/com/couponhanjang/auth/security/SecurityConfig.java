@@ -58,8 +58,8 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(@Value("${app.allowed-origin}") String allowedOrigin) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(allowedOrigin));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Content-Type"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "Idempotency-Key"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
@@ -68,8 +68,8 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService service, Clock clock,
-                                            HttpSessionSecurityContextRepository contextRepository,
-                                            @Value("${app.allowed-origin}") String allowedOrigin) throws Exception {
+            HttpSessionSecurityContextRepository contextRepository,
+            @Value("${app.allowed-origin}") String allowedOrigin) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -81,8 +81,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) ->
-                        ApiErrorWriter.write(response, 401, "UNAUTHORIZED", "Authentication required")))
+                .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response,
+                        exception) -> ApiErrorWriter.write(response, 401, "UNAUTHORIZED", "Authentication required")))
                 .addFilterBefore(new OriginGuardFilter(allowedOrigin), AuthorizationFilter.class)
                 .addFilterBefore(new SessionValidationFilter(service, clock), AuthorizationFilter.class);
         return http.build();

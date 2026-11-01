@@ -1,6 +1,5 @@
 package com.couponhanjang.common.exception;
 
-
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -16,18 +15,24 @@ import java.util.UUID;
 public class ApiExceptionHandler {
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> api(ApiException error) {
-        return ResponseEntity.status(error.status()).body(new ApiError(error.code(), error.getMessage(), UUID.randomUUID()));
+        return ResponseEntity.status(error.status())
+                .body(new ApiError(error.code(), error.getMessage(), UUID.randomUUID()));
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
+    @ExceptionHandler({ MethodArgumentNotValidException.class, HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingRequestHeaderException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class })
     ResponseEntity<ApiError> invalidRequest(Exception error) {
-        return ResponseEntity.badRequest().body(new ApiError("INVALID_REQUEST", "Invalid request body", UUID.randomUUID()));
+        return ResponseEntity.badRequest()
+                .body(new ApiError("INVALID_REQUEST", "Invalid request body", UUID.randomUUID()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> conflict(DataIntegrityViolationException error) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiError("PHONE_ALREADY_REGISTERED", "This phone is already registered", UUID.randomUUID()));
+                .body(new ApiError("DATA_CONFLICT", "Data changed or conflicts with an existing record",
+                        UUID.randomUUID()));
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
@@ -36,5 +41,6 @@ public class ApiExceptionHandler {
                 .body(new ApiError("ACCOUNT_CONFLICT", "Account changed; retry the request", UUID.randomUUID()));
     }
 
-    record ApiError(String code, String message, UUID requestId) { }
+    record ApiError(String code, String message, UUID requestId) {
+    }
 }

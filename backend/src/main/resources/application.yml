@@ -20,3 +20,11 @@ app:
   phone:
     encryption-key: ${APP_PHONE_ENCRYPTION_KEY}
     lookup-key: ${APP_PHONE_LOOKUP_KEY}
+  customer-phone:
+    encryption-key: ${APP_CUSTOMER_PHONE_ENCRYPTION_KEY}
+    lookup-key: ${APP_CUSTOMER_PHONE_LOOKUP_KEY}
+  coupon-code:
+    encryption-key: ${APP_COUPON_CODE_ENCRYPTION_KEY}
+    mac-key: ${APP_COUPON_CODE_MAC_KEY}
+  quota:
+    monthly-message-limit: ${APP_MONTHLY_MESSAGE_LIMIT}
