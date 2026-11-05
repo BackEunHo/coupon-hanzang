@@ -36,13 +36,22 @@ public class CouponIssueService {
     private final CouponExpiryCalculator expiry;
     private final ObjectMapper json;
     private final Clock clock;
+    private final com.couponhanjang.message.service.CouponMessageService messages;
+    private final com.couponhanjang.message.service.MessageLengthValidator length;
+    private final com.couponhanjang.integration.solapi.SolapiProperties sending;
     private final int monthlyLimit;
 
     public CouponIssueService(CouponRepository coupons, CouponTemplateRepository templates,
             CouponIssuanceStore store, CouponQueryService query,
             CustomerPhoneProtector phones, CouponCodeProtector codes,
             CouponExpiryCalculator expiry, ObjectMapper json, Clock clock,
+            com.couponhanjang.message.service.CouponMessageService messages,
+            com.couponhanjang.message.service.MessageLengthValidator length,
+            com.couponhanjang.integration.solapi.SolapiProperties sending,
             @Value("${app.quota.monthly-message-limit}") int monthlyLimit) {
+        this.messages = messages;
+        this.length = length;
+        this.sending = sending;
         this.coupons = coupons;
         this.templates = templates;
         this.store = store;
@@ -92,21 +101,29 @@ public class CouponIssueService {
                 ? TemplateValues.parse(body.get("overrides"), template.values())
                 : template.values();
         var validity = expiry.resolve(values.expiry(), now);
+        UUID couponId = UUID.randomUUID();
+        var code = codes.generate(couponId);
+        String text = messages.compose(merchantId, values, validity, code.plaintext());
+        var inspection = length.requireSendable(text);
+        if (sending.isSendEnabled() && !sending.allows(phone))
+            throw new ApiException(403, "RECIPIENT_NOT_ALLOWED", "Recipient is not allowed for test sending");
         LocalDate month = now.atZone(CouponExpiryCalculator.ZONE).toLocalDate().withDayOfMonth(1);
         if (!store.reserve(merchantId, month, monthlyLimit)) {
             throw new ApiException(429, "QUOTA_EXCEEDED", "Monthly message quota exceeded");
         }
 
         UUID customerId = store.customer(merchantId, phones.lookup(merchantId, phone), phones.encrypt(phone), now);
-        UUID couponId = UUID.randomUUID();
-        var code = codes.generate(couponId);
-        Coupon coupon = coupons.saveAndFlush(new Coupon(couponId, merchantId, templateId, customerId,
-                values, now, validity.startsAt(), validity.expiresAt(), operatorId, code.mac()));
+        Coupon coupon = new Coupon(couponId, merchantId, templateId, customerId,
+                values, now, validity.startsAt(), validity.expiresAt(), operatorId, code.mac());
+        coupon.recordMessagePlan(inspection.expectedMessageType(), inspection.byteLength());
+        coupons.saveAndFlush(coupon);
 
         ObjectNode payload = json.createObjectNode();
-        payload.put("code", code.plaintext());
+        payload.put("text", text);
+        payload.put("from", sending.getFromNumber());
         payload.put("couponId", couponId.toString());
-        store.enqueue(merchantId, couponId, phones.encrypt(phone), codes.encryptPayload(payload.toString()), now);
+        store.enqueue(merchantId, couponId, phones.encrypt(phone), codes.encryptPayload(payload.toString()), now,
+                inspection.expectedMessageType(), inspection.byteLength(), sending.isSendEnabled());
         store.complete(merchantId, key, couponId);
         return query.response(coupon);
     }

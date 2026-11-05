@@ -67,6 +67,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    @org.springframework.core.annotation.Order(1)
+    SecurityFilterChain solapiWebhookSecurity(HttpSecurity http,
+            com.couponhanjang.integration.solapi.SolapiProperties settings) throws Exception {
+        return http.securityMatcher("/api/v1/webhooks/solapi")
+                .csrf(AbstractHttpConfigurer::disable)
+                .requestCache(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, "/api/v1/webhooks/solapi")
+                        .permitAll().anyRequest().denyAll())
+                .addFilterBefore(new SolapiWebhookAuthenticationFilter(settings), AuthorizationFilter.class)
+                .build();
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService service, Clock clock,
             HttpSessionSecurityContextRepository contextRepository,
             @Value("${app.allowed-origin}") String allowedOrigin) throws Exception {

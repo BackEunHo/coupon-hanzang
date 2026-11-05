@@ -29,6 +29,11 @@ public class Coupon {
     @Column(nullable = false)
     private Instant expiresAt;
     private Instant redeemedAt;
+    @Column(length = 3)
+    private String expectedMessageType;
+    @Column(length = 3)
+    private String actualMessageType;
+    private Integer messageByteLength;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private CouponStatus status;
@@ -67,6 +72,23 @@ public class Coupon {
         this.codeKeyVersion = 1;
         this.consentOperatorId = operatorId;
         this.consentCheckedAt = issuedAt;
+    }
+
+    public void recordMessagePlan(String type, int bytes) {
+        expectedMessageType = type;
+        messageByteLength = bytes;
+    }
+
+    public String getExpectedMessageType() {
+        return expectedMessageType;
+    }
+
+    public String getActualMessageType() {
+        return actualMessageType;
+    }
+
+    public Integer getMessageByteLength() {
+        return messageByteLength;
     }
 
     public CouponStatus effectiveStatus(Instant now) {
