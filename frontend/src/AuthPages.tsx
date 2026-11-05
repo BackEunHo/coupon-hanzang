@@ -1,16 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { authDestination, plans, selectedPlan, validateSignup } from './flow.mjs'
+import { isSignedIn, markSignedIn } from './auth/session.mjs'
 
-const signedInKey = 'couponhanjang-signed-in-until'
 const planQuery = () => {
   const plan = selectedPlan(window.location.search)
   return plan ? `?plan=${plan}` : ''
 }
-function recentlySignedIn() {
-  return Number(sessionStorage.getItem(signedInKey)) > Date.now()
-}
 export function planLink(plan: string) {
-  return recentlySignedIn() ? `/pricing/confirm/?plan=${plan}` : `/login/?plan=${plan}`
+  return isSignedIn() ? `/pricing/confirm/?plan=${plan}` : `/login/?plan=${plan}`
 }
 function Shell({ children }: { children: React.ReactNode }) {
   return <div className="auth-shell"><header className="auth-header"><a className="wordmark" href="/"><span className="brand-symbol" aria-hidden="true"><span /></span><span>쿠폰한장</span></a><a href="/pricing/">요금 안내</a></header><main className="auth-main">{children}</main></div>
@@ -42,7 +39,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         else setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.')
         return
       }
-      sessionStorage.setItem(signedInKey, String(Date.now() + 24 * 60 * 60 * 1000))
+      markSignedIn()
       window.location.assign(authDestination(window.location.search))
     } catch {
       setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')
@@ -63,7 +60,7 @@ export function ConfirmPage() {
   const id = selectedPlan(window.location.search)
   const plan = id ? plans[id] : null
   if (!plan) return <Shell><div className="auth-card"><h1>요금제를 확인할 수 없습니다</h1><a href="/pricing/">요금 안내로 돌아가기</a></div></Shell>
-  if (!recentlySignedIn()) return <Shell><div className="auth-card"><h1>로그인이 필요합니다</h1><p className="auth-intro">선택한 요금제를 확인하려면 로그인해 주세요.</p><a className="auth-submit auth-action" href={`/login/?plan=${id}`}>로그인</a></div></Shell>
+  if (!isSignedIn()) return <Shell><div className="auth-card"><h1>로그인이 필요합니다</h1><p className="auth-intro">선택한 요금제를 확인하려면 로그인해 주세요.</p><a className="auth-submit auth-action" href={`/login/?plan=${id}`}>로그인</a></div></Shell>
   return <Shell><div className="auth-card"><p className="section-label">요금제 확인</p><h1>{plan.name}</h1><p className="plan-price">{plan.price}</p><p>{plan.description}</p><div className="plan-notice"><strong>임시 가격입니다</strong><p>문자 발송 조건은 미정이며, 요금제 신청과 결제는 준비 중입니다. 이 화면에서 요금제가 적용되거나 결제되지 않습니다.</p></div><a className="auth-submit auth-action" href="/manage/">쿠폰 관리로 이동</a><a className="text-link" href="/pricing/">다른 요금제 보기 →</a></div></Shell>
 }
 export function WelcomePage() {
