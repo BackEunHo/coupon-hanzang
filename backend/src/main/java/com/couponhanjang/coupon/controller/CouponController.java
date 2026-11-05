@@ -7,6 +7,10 @@ import com.couponhanjang.coupon.dto.CouponResponse;
 import com.couponhanjang.coupon.service.CouponIssueService;
 import com.couponhanjang.coupon.service.CouponQueryService;
 import com.couponhanjang.merchant.service.MerchantAccessService;
+import com.couponhanjang.message.dto.MessagePreviewResponse;
+import com.couponhanjang.message.repository.MessageDeliveryStore.RetryResponse;
+import com.couponhanjang.message.service.CouponMessageService;
+import com.couponhanjang.message.service.MessageRetryService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,8 +25,14 @@ public class CouponController {
     private final CouponIssueService issue;
     private final CouponQueryService query;
     private final MerchantAccessService access;
+    private final CouponMessageService messages;
+    private final MessageRetryService retries;
 
-    public CouponController(CouponIssueService issue, CouponQueryService query, MerchantAccessService access) {
+    public CouponController(CouponIssueService issue, CouponQueryService query, MerchantAccessService access,
+            CouponMessageService messages,
+            MessageRetryService retries) {
+        this.messages = messages;
+        this.retries = retries;
         this.issue = issue;
         this.query = query;
         this.access = access;
@@ -36,6 +46,20 @@ public class CouponController {
         var result = issue.issue(access.requireActiveMerchantId(user.operatorId()),
                 user.operatorId(), requestKey, body);
         return ResponseEntity.accepted().location(URI.create("/api/v1/coupons/" + result.id())).body(result);
+    }
+
+    @PostMapping("/preview")
+    public MessagePreviewResponse preview(@AuthenticationPrincipal AuthPrincipal user,
+            @RequestBody JsonNode body) {
+        return messages.preview(access.requireActiveMerchantId(user.operatorId()), body);
+    }
+
+    @PostMapping("/{id}/delivery-retry")
+    public ResponseEntity<RetryResponse> retry(
+            @AuthenticationPrincipal AuthPrincipal user, @PathVariable UUID id,
+            @RequestHeader("Idempotency-Key") String key) {
+        return ResponseEntity.accepted()
+                .body(retries.retry(access.requireActiveMerchantId(user.operatorId()), id, JsonInput.uuid(key)));
     }
 
     @GetMapping

@@ -56,12 +56,20 @@ public class CouponIssuanceStore {
                 Timestamp.from(now), Timestamp.from(now));
     }
 
-    public void enqueue(UUID merchantId, UUID couponId, String recipient, String payload, Instant now) {
-        jdbc.update("""
-                insert into message_outbox(id, merchant_id, coupon_id, kind, recipient_ciphertext,
-                                           payload_ciphertext, state, created_at, key_version)
-                values (?, ?, ?, 'COUPON_ISSUED', ?, ?, 'QUEUED', ?, 1)
-                """, UUID.randomUUID(), merchantId, couponId, recipient, payload, Timestamp.from(now));
+    public UUID enqueue(UUID merchantId, UUID couponId, String recipient, String payload, Instant now,
+            String expectedType, int byteLength, boolean dispatchEnabled) {
+        UUID id = UUID.randomUUID();
+        jdbc.update(
+                """
+                        insert into message_outbox(id,merchant_id,coupon_id,kind,recipient_ciphertext,payload_ciphertext,
+                            state,created_at,key_version,payload_version,dispatch_enabled,expected_type,byte_length,reservation_month,next_attempt_at)
+                        values (?,?,?,'COUPON_ISSUED',?,?,'QUEUED',?,1,2,?,?,?,?,?)
+                        """,
+                id, merchantId, couponId, recipient, payload, Timestamp.from(now), dispatchEnabled, expectedType,
+                byteLength,
+                now.atZone(java.time.ZoneId.of("Asia/Seoul")).toLocalDate().withDayOfMonth(1), Timestamp.from(now));
+        jdbc.update("update coupons set current_outbox_id=? where id=?", id, couponId);
+        return id;
     }
 
     public void complete(UUID merchantId, UUID key, UUID couponId) {

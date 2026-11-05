@@ -24,3 +24,7 @@ app:
     mac-key: BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU=
   quota:
     monthly-message-limit: 100
+
+solapi:
+  background-enabled: false
+  send-enabled: false

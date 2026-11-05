@@ -28,3 +28,15 @@ app:
     mac-key: ${APP_COUPON_CODE_MAC_KEY}
   quota:
     monthly-message-limit: ${APP_MONTHLY_MESSAGE_LIMIT}
+
+solapi:
+  send-enabled: ${SOLAPI_SEND_ENABLED:false}
+  api-key: ${SOLAPI_API_KEY:}
+  api-secret: ${SOLAPI_API_SECRET:}
+  from-number: ${SOLAPI_FROM_NUMBER:}
+  webhook-secret: ${SOLAPI_WEBHOOK_SECRET:}
+  allowed-recipients: ${SOLAPI_ALLOWED_RECIPIENTS:}
+  allow-all-recipients: ${SOLAPI_ALLOW_ALL_RECIPIENTS:false}
+  count-delivery-failures: ${SOLAPI_COUNT_DELIVERY_FAILURES:true}
+  max-sends-per-run: ${SOLAPI_MAX_SENDS_PER_RUN:1}
+  background-enabled: ${SOLAPI_BACKGROUND_ENABLED:true}

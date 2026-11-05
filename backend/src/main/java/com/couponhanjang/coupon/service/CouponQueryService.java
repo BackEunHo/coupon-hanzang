@@ -53,7 +53,8 @@ public class CouponQueryService {
                 coupon.getBenefit(), coupon.getNotice(),
                 deleted ? "010-****-****" : customer.displayPhone(phones), deleted,
                 coupon.getIssuedAt(), coupon.getStartsAt(), coupon.getExpiresAt(), coupon.getRedeemedAt(),
-                status, coupon.getIssueMessageStatus(), closureReason);
+                status, coupon.getIssueMessageStatus(), closureReason, coupon.getExpectedMessageType(),
+                coupon.getMessageByteLength(), coupon.getActualMessageType());
     }
 
     public PageResponse<CouponResponse> list(UUID merchantId, String phone, String title, String status,

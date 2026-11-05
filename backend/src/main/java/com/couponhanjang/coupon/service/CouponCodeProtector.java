@@ -36,6 +36,10 @@ public class CouponCodeProtector {
         return cipher.encrypt(payload);
     }
 
+    public String decryptPayload(String encrypted) {
+        return cipher.decrypt(encrypted);
+    }
+
     public boolean verify(UUID couponId, String plain, String mac) {
         return plain != null && plain.matches("[0-9]{6}") && mac != null
                 && MessageDigest.isEqual(
