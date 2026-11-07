@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { api } from '../../api'
 import { ApiError } from '../../api/client.mjs'
 import type { Coupon, CouponFields as Fields, Template } from '../../api/types'
-import { CouponFields, CouponPreview } from '../CouponFields'
+import { CouponFields } from '../CouponFields'
 import { createIssueAttempt, issueBody, validPhone, validateFields } from '../domain.mjs'
 import { Dialog, ErrorNotice } from '../shared'
 import { TemplateList } from '../templates/TemplateList'
@@ -67,10 +67,11 @@ export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; 
   return <Dialog title={!template ? '발급할 템플릿 선택' : review ? '발급 내용 최종 확인' : '쿠폰 발급'} onClose={close} locked={busy}>
     {!template || !fields ? <><p className="manage-hint">저장한 혜택을 선택하거나 새 템플릿을 만들어 주세요.</p><TemplateList select={select} onCreate={() => setCreating(true)} /></> : <form onSubmit={submit} noValidate>
       <p className="manage-hint">이번에 수정한 내용은 이 쿠폰에만 적용됩니다. 저장된 템플릿은 바뀌지 않습니다.</p>
-      <div className="coupon-editor"><div>{!review ? <CouponFields value={fields} onChange={setFields} disabled={busy} /> : <p className="review-instruction">쿠폰 미리보기와 고객 번호를 확인해 주세요.</p>}
-      <label className="recipient-field">고객 휴대전화 번호<input type="tel" autoComplete="off" value={phone} disabled={busy || review} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" required /></label>
-      <label className="consent-field"><input type="checkbox" checked={consent} disabled={busy || review} onChange={e => setConsent(e.target.checked)} /><span>고객의 쿠폰 수령 의사와 문자 메시지 수신 여부를 확인했습니다.</span></label></div><CouponPreview value={fields} /></div>
-      <MessagePreview data={preview.data} loading={preview.loading} error={preview.error} unavailable={Boolean(validateFields(fields))} onRefresh={() => { if (!busy) void preview.refresh() }} />
+      <div className="coupon-editor"><div>{!review ? <CouponFields value={fields} onChange={setFields} disabled={busy} /> : <p className="review-instruction">전송될 문자와 고객 번호를 확인해 주세요.</p>}
+        <label className="recipient-field">고객 휴대전화 번호<input type="tel" autoComplete="off" value={phone} disabled={busy || review} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" required /></label>
+        <label className="consent-field"><input type="checkbox" checked={consent} disabled={busy || review} onChange={e => setConsent(e.target.checked)} /><span>고객의 쿠폰 수령 의사와 문자 메시지 수신 여부를 확인했습니다.</span></label></div>
+        <MessagePreview data={preview.data} loading={preview.loading} error={preview.error} unavailable={Boolean(validateFields(fields))} onRefresh={() => { if (!busy) void preview.refresh() }} />
+      </div>
       <p className="manage-scope">접수 후 문자 상태에서 전달 결과를 확인할 수 있습니다. 문자 길이와 발급 가능 여부는 서버에서 최종 확인합니다.</p>
       {validation && <p role="alert" className="manage-error">{validation}</p>}{error !== undefined && <ErrorNotice error={error} />}
       {uncertain && <p className="manage-hint" role="status">서버가 접수했을 수 있습니다. 아래 버튼은 같은 요청으로 재확인하며 쿠폰을 중복 생성하지 않습니다. 내용을 바꾸려면 먼저 발급 목록을 확인해 주세요.</p>}
