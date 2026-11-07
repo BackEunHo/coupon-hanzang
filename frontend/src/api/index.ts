@@ -1,5 +1,5 @@
 import { createApiClient } from './client.mjs'
-import type { Coupon, CouponFields, CouponFilters, IssueRequest, Page, Template } from './types'
+import type { Coupon, CouponFields, CouponFilters, DeliveryRetryResponse, IssueRequest, MessagePreviewRequest, MessagePreviewResponse, Page, Template } from './types'
 import { clearSignedIn } from '../auth/session.mjs'
 
 const request = createApiClient({
@@ -22,4 +22,6 @@ export const api = {
   coupons: (page: number, filters: CouponFilters, signal?: AbortSignal) => request<Page<Coupon>>(`/api/v1/coupons?${query(page, filters)}`, { signal }),
   coupon: (id: string, signal?: AbortSignal) => request<Coupon>(`/api/v1/coupons/${encodeURIComponent(id)}`, { signal }),
   issue: (body: IssueRequest, key: string) => request<Coupon>('/api/v1/coupons', { method: 'POST', body, key }),
+  preview: (body: MessagePreviewRequest, signal?: AbortSignal) => request<MessagePreviewResponse>('/api/v1/coupons/preview', { method: 'POST', body, signal }),
+  retryDelivery: (couponId: string, key: string) => request<DeliveryRetryResponse>(`/api/v1/coupons/${encodeURIComponent(couponId)}/delivery-retry`, { method: 'POST', key }),
 }

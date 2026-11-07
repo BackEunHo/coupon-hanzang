@@ -1,5 +1,5 @@
 export const couponStatuses = { PENDING_SEND: '발송 대기', ACTIVE: '사용 가능', SEND_FAILED: '발송 실패', REDEEMED: '사용 완료', EXPIRED: '만료', CLOSED_INACTIVE: '비활동 종료' }
-export const messageStatuses = { QUEUED: '접수 대기', SUBMITTED: '전송 요청됨', DELIVERED: '전달 완료', FAILED: '전달 실패', UNKNOWN: '확인 중' }
+export const messageStatuses = { QUEUED: '발송 대기', SUBMITTED: '전송 요청됨', DELIVERED: '전달 완료', FAILED: '전달 실패', UNKNOWN: '전송 결과 확인 중' }
 export const validPhone = phone => /^(010\d{8}|010-\d{4}-\d{4})$/.test(phone)
 const dateString = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value && value >= '0001-01-01'
 export function validateFields(fields) {

@@ -7,6 +7,9 @@ import { createIssueAttempt, issueBody, validPhone, validateFields } from '../do
 import { Dialog, ErrorNotice } from '../shared'
 import { TemplateList } from '../templates/TemplateList'
 import { TemplateForm } from '../templates/TemplateForm'
+import { useMessagePreview } from './useMessagePreview'
+import { MessagePreview } from './MessagePreview'
+import { previewRequest } from './message-state.mjs'
 
 export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; onIssued: (coupon: Coupon) => void }) {
   const [template, setTemplate] = useState<Template>()
@@ -21,6 +24,7 @@ export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; 
   const [validation, setValidation] = useState('')
   const attempt = useRef<ReturnType<typeof createIssueAttempt<Coupon>> | undefined>(undefined)
   const lock = useRef(false)
+  const preview = useMessagePreview(template && fields && !validateFields(fields) ? previewRequest(template, fields) : null)
   function select(value: Template) {
     setTemplate(value); setFields({ title: value.title, benefit: value.benefit, notice: value.notice, expiry: value.expiry }); setCreating(false)
   }
@@ -34,7 +38,16 @@ export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; 
     const message = validateFields(fields) || (!validPhone(phone) ? '올바른 010 휴대전화 번호를 입력해 주세요.' : !consent ? '고객의 쿠폰 수령 의사와 문자 수신 여부를 확인해 주세요.' : '')
     if (message) { setValidation(message); return }
     setValidation('')
-    if (!review) { setReview(true); return }
+    if (!review) {
+      if (preview.loading || !preview.data?.sendable) return
+      lock.current = true; setBusy(true)
+      try {
+        const latest = await preview.refresh()
+        if (latest?.sendable) setReview(true)
+      } finally { lock.current = false; setBusy(false) }
+      return
+    }
+    if (!uncertain && (preview.loading || !preview.data?.sendable)) return
     lock.current = true; setBusy(true); setError(undefined)
     try {
       attempt.current ??= createIssueAttempt(issueBody(template.id, template, fields, phone), api.issue)
@@ -44,7 +57,10 @@ export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; 
       setError(error)
       const unknownResult = !(error instanceof ApiError) || error.status >= 500
       setUncertain(unknownResult)
-      if (!unknownResult) { attempt.current = undefined; setReview(false) }
+      if (!unknownResult) {
+        attempt.current = undefined; setReview(false)
+        if (error instanceof ApiError && error.status === 422) void preview.refresh()
+      }
     } finally { lock.current = false; setBusy(false) }
   }
   if (creating) return <TemplateForm onClose={() => setCreating(false)} onSaved={select} />
@@ -54,10 +70,11 @@ export function IssueCouponDialog({ onClose, onIssued }: { onClose: () => void; 
       <div className="coupon-editor"><div>{!review ? <CouponFields value={fields} onChange={setFields} disabled={busy} /> : <p className="review-instruction">쿠폰 미리보기와 고객 번호를 확인해 주세요.</p>}
       <label className="recipient-field">고객 휴대전화 번호<input type="tel" autoComplete="off" value={phone} disabled={busy || review} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" required /></label>
       <label className="consent-field"><input type="checkbox" checked={consent} disabled={busy || review} onChange={e => setConsent(e.target.checked)} /><span>고객의 쿠폰 수령 의사와 문자 메시지 수신 여부를 확인했습니다.</span></label></div><CouponPreview value={fields} /></div>
-      <p className="manage-scope">현재는 발급 접수만 지원하며 실제 문자 발송은 아직 지원하지 않습니다.</p>
+      <MessagePreview data={preview.data} loading={preview.loading} error={preview.error} unavailable={Boolean(validateFields(fields))} onRefresh={() => { if (!busy) void preview.refresh() }} />
+      <p className="manage-scope">접수 후 문자 상태에서 전달 결과를 확인할 수 있습니다. 문자 길이와 발급 가능 여부는 서버에서 최종 확인합니다.</p>
       {validation && <p role="alert" className="manage-error">{validation}</p>}{error !== undefined && <ErrorNotice error={error} />}
       {uncertain && <p className="manage-hint" role="status">서버가 접수했을 수 있습니다. 아래 버튼은 같은 요청으로 재확인하며 쿠폰을 중복 생성하지 않습니다. 내용을 바꾸려면 먼저 발급 목록을 확인해 주세요.</p>}
-      <div className="dialog-actions">{!uncertain && <button type="button" disabled={busy} onClick={() => { setError(undefined); if (review) setReview(false); else { setTemplate(undefined); setFields(undefined) } }}>{review ? '내용 수정' : '템플릿 다시 선택'}</button>}<button className="manage-primary" disabled={busy}>{busy ? '접수 중…' : uncertain ? '같은 요청 다시 확인' : review ? '발급 요청 접수' : '발급 내용 확인'}</button></div>
+      <div className="dialog-actions">{!uncertain && <button type="button" disabled={busy} onClick={() => { setError(undefined); if (review) setReview(false); else { setTemplate(undefined); setFields(undefined) } }}>{review ? '내용 수정' : '템플릿 다시 선택'}</button>}<button className="manage-primary" disabled={busy || (!uncertain && (preview.loading || !preview.data?.sendable))}>{busy ? review ? '접수 중…' : '문자 확인 중…' : uncertain ? '같은 요청 다시 확인' : review ? '발급 요청 접수' : '발급 내용 확인'}</button></div>
     </form>}
   </Dialog>
 }
