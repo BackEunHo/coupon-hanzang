@@ -15,8 +15,8 @@ test('management entry renders search, issuing action and honest delivery scope'
     const html = createRequire(import.meta.url)(file)
     assert.match(html, /고객 휴대전화 번호/)
     assert.match(html, /쿠폰 발급/)
-    assert.match(html, /실제 문자 발송/)
+    assert.match(html, /문자.*전달 결과/)
     assert.match(html, /템플릿 관리/)
-    assert.doesNotMatch(html, /사용 완료 처리/)
+    assert.doesNotMatch(html, /실제 문자 발송.*지원하지 않습니다/)
   } finally { await rm(dir, { recursive: true, force: true }) }
 })

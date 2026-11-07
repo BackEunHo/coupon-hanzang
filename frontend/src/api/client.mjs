@@ -23,6 +23,10 @@ export function createApiClient({ base = '', fetcher = fetch, onUnauthorized = (
 }
 export function errorText(error) {
   if (!(error instanceof ApiError)) return '서버와 연결하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.'
+  if (error.code === 'MESSAGE_TOO_LONG') return '최종 문자 내용이 2,000바이트를 초과합니다. 혜택이나 안내문을 줄여 주세요.'
+  if (error.code === 'UNSUPPORTED_MESSAGE_CHARACTERS') return '문자에 지원하지 않는 문자나 이모지가 있습니다. 내용을 수정해 주세요.'
+  if (error.code === 'RECIPIENT_NOT_ALLOWED') return '시험 발송이 허용된 수신번호가 아닙니다. 등록된 시험 번호를 확인해 주세요.'
+  if (error.code === 'DELIVERY_NOT_RETRYABLE') return '현재 상태에서는 문자를 다시 보낼 수 없습니다. 최신 상태를 확인해 주세요.'
   if (error.code === 'QUOTA_EXCEEDED') return '이번 달 문자 발송 한도에 도달해 발급할 수 없습니다.'
   if (error.code.includes('IDEMPOTENCY')) return '이 요청과 기존 발급 내용이 다릅니다. 발급 목록에서 결과를 먼저 확인해 주세요.'
   if (error.status === 401) return '로그인이 만료되었습니다. 다시 로그인해 주세요.'
