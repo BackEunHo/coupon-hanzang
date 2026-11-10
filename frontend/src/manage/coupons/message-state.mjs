@@ -97,6 +97,11 @@ export function createDeliveryTracker(initial, request, onChange, clock = timers
     }
   }
   return {
+    replace(data) {
+      if (!active || data.id !== initial.id) return
+      cancel()
+      emit({ data, loading: false, autoStopped: false, error: undefined })
+    },
     start() { return load() },
     refresh() { startedAt = clock.now(); emit({ autoStopped: false }); return load() },
     setVisible(value) {

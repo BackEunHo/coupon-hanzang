@@ -990,3 +990,39 @@
     flex-wrap: wrap;
   }
 }
+
+.coupon-redemption {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line, #ddd);
+}
+
+.coupon-redemption form {
+  display: grid;
+  gap: 12px;
+}
+
+.coupon-redemption label {
+  font-weight: 600;
+}
+
+.coupon-redemption input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 280px;
+  padding: 12px;
+  font-size: 18px;
+  letter-spacing: .12em;
+}
+
+.coupon-redemption .retry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 540px) {
+  .coupon-redemption .retry-actions>button {
+    flex: 1;
+  }
+}

@@ -11,3 +11,5 @@ export type CouponFilters = { phone: string; title: string; status: string }
 export type MessagePreviewRequest = { templateId: string; overrides?: Partial<CouponFields> }
 export type MessagePreviewResponse = { previewText: string; byteLength: number | null; expectedMessageType: MessageType | null; sendable: boolean; validationErrors: string[]; calculatedAt: string }
 export type DeliveryRetryResponse = { id: string; kind: 'COUPON_ISSUED'; status: string; requestedAt: string }
+
+export type RedeemRequest = { code: string }
