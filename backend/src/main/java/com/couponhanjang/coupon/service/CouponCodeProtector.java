@@ -40,6 +40,10 @@ public class CouponCodeProtector {
         return cipher.decrypt(encrypted);
     }
 
+    public String redemptionFingerprint(UUID couponId, String code) {
+        return cipher.mac("REDEEM_COUPON:" + couponId + ":" + code);
+    }
+
     public boolean verify(UUID couponId, String plain, String mac) {
         return plain != null && plain.matches("[0-9]{6}") && mac != null
                 && MessageDigest.isEqual(

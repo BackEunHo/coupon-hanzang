@@ -29,6 +29,9 @@ public class Coupon {
     @Column(nullable = false)
     private Instant expiresAt;
     private Instant redeemedAt;
+    @Column(nullable = false)
+    private int redeemFailedAttempts;
+    private Instant redeemLockedUntil;
     @Column(length = 3)
     private String expectedMessageType;
     @Column(length = 3)
@@ -72,6 +75,37 @@ public class Coupon {
         this.codeKeyVersion = 1;
         this.consentOperatorId = operatorId;
         this.consentCheckedAt = issuedAt;
+    }
+
+    public boolean canRedeem(Instant now) {
+        return status == CouponStatus.ACTIVE && "DELIVERED".equals(issueMessageStatus)
+                && customerId != null && codeKeyVersion == 1 && codeMac != null
+                && !now.isBefore(startsAt) && now.isBefore(expiresAt);
+    }
+
+    public boolean isRedemptionLocked(Instant now) {
+        return redeemLockedUntil != null && now.isBefore(redeemLockedUntil);
+    }
+
+    public void recordInvalidRedemption(Instant now) {
+        if (redeemLockedUntil != null && !now.isBefore(redeemLockedUntil)) {
+            redeemFailedAttempts = 0;
+            redeemLockedUntil = null;
+        }
+        if (++redeemFailedAttempts >= 5)
+            redeemLockedUntil = now.plusSeconds(15 * 60);
+    }
+
+    public void redeem(Instant now) {
+        status = CouponStatus.REDEEMED;
+        redeemedAt = now;
+        codeMac = null;
+        redeemFailedAttempts = 0;
+        redeemLockedUntil = null;
+    }
+
+    public String getCodeMac() {
+        return codeMac;
     }
 
     public void recordMessagePlan(String type, int bytes) {
