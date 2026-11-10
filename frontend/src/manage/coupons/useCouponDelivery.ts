@@ -16,5 +16,6 @@ export function useCouponDelivery(coupon: Coupon) {
     return () => { current.stop(); document.removeEventListener('visibilitychange', visible); tracker.current = undefined }
   }, [coupon.id])
   const refresh = useCallback(() => tracker.current?.refresh(), [])
-  return { ...state, refresh }
+  const replace = useCallback((data: Coupon) => tracker.current?.replace(data), [])
+  return { ...state, refresh, replace }
 }

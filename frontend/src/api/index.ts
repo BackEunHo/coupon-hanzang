@@ -1,5 +1,5 @@
 import { createApiClient } from './client.mjs'
-import type { Coupon, CouponFields, CouponFilters, DeliveryRetryResponse, IssueRequest, MessagePreviewRequest, MessagePreviewResponse, Page, Template } from './types'
+import type { Coupon, RedeemRequest, CouponFields, CouponFilters, DeliveryRetryResponse, IssueRequest, MessagePreviewRequest, MessagePreviewResponse, Page, Template } from './types'
 import { clearSignedIn } from '../auth/session.mjs'
 
 const request = createApiClient({
@@ -15,6 +15,12 @@ const query = (page: number, filters: Partial<CouponFilters> = {}) => {
   return params.toString()
 }
 export const api = {
+  redeemCoupon: async (id: string, body: RedeemRequest, key: string): Promise<Coupon> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 15_000)
+    try { return await request<Coupon>(`/api/v1/coupons/${encodeURIComponent(id)}/redeem`, { method: 'POST', body, key, signal: controller.signal }) }
+    finally { clearTimeout(timer) }
+  },
   templates: (page: number, signal?: AbortSignal) => request<Page<Template>>(`/api/v1/templates?${query(page)}`, { signal }),
   template: (id: string, signal?: AbortSignal) => request<Template>(`/api/v1/templates/${encodeURIComponent(id)}`, { signal }),
   saveTemplate: (fields: Partial<CouponFields>, id?: string) => request<Template>(`/api/v1/templates${id ? `/${encodeURIComponent(id)}` : ''}`, { method: id ? 'PATCH' : 'POST', body: fields }),
