@@ -6,6 +6,8 @@ import com.couponhanjang.common.api.PageResponse;
 import com.couponhanjang.coupon.dto.CouponResponse;
 import com.couponhanjang.coupon.service.CouponIssueService;
 import com.couponhanjang.coupon.service.CouponQueryService;
+import com.couponhanjang.coupon.service.CouponRedemptionService;
+import java.util.Set;
 import com.couponhanjang.merchant.service.MerchantAccessService;
 import com.couponhanjang.message.dto.MessagePreviewResponse;
 import com.couponhanjang.message.repository.MessageDeliveryStore.RetryResponse;
@@ -27,10 +29,12 @@ public class CouponController {
     private final MerchantAccessService access;
     private final CouponMessageService messages;
     private final MessageRetryService retries;
+    private final CouponRedemptionService redemption;
 
     public CouponController(CouponIssueService issue, CouponQueryService query, MerchantAccessService access,
             CouponMessageService messages,
-            MessageRetryService retries) {
+            MessageRetryService retries, CouponRedemptionService redemption) {
+        this.redemption = redemption;
         this.messages = messages;
         this.retries = retries;
         this.issue = issue;
@@ -60,6 +64,16 @@ public class CouponController {
             @RequestHeader("Idempotency-Key") String key) {
         return ResponseEntity.accepted()
                 .body(retries.retry(access.requireActiveMerchantId(user.operatorId()), id, JsonInput.uuid(key)));
+    }
+
+    @PostMapping("/{id}/redeem")
+    public CouponResponse redeem(@AuthenticationPrincipal AuthPrincipal user, @PathVariable UUID id,
+            @RequestHeader("Idempotency-Key") String key, @RequestBody JsonNode body) {
+        JsonInput.fields(body, Set.of("code"), true);
+        String code = JsonInput.text(body, "code", 6, false);
+        if (!code.matches("[0-9]{6}"))
+            throw JsonInput.invalid();
+        return redemption.redeem(access.requireActiveMerchantId(user.operatorId()), id, JsonInput.uuid(key), code);
     }
 
     @GetMapping
