@@ -1,0 +1,78 @@
+name: coupon-hanjang
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 192m
+    memswap_limit: 384m
+    command: ["postgres", "-c", "shared_buffers=32MB", "-c", "work_mem=2MB", "-c", "maintenance_work_mem=16MB", "-c", "max_connections=20"]
+    environment:
+      POSTGRES_DB: coupon_hanjang
+      POSTGRES_USER: coupon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coupon -d coupon_hanjang"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+  api:
+    image: coupon-hanjang-api:${RELEASE:?Set RELEASE in .env}
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 1g
+    stop_grace_period: 40s
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/coupon_hanjang
+      SPRING_DATASOURCE_USERNAME: coupon
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "4"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "1"
+      SERVER_TOMCAT_THREADS_MAX: "8"
+      SERVER_TOMCAT_THREADS_MIN_SPARE: "1"
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SERVER_SHUTDOWN: graceful
+      SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: 30s
+      APP_ALLOWED_ORIGIN: https://${DOMAIN:?Set DOMAIN in .env}
+      APP_COOKIE_SECURE: "true"
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m -Xss512k -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:MaxDirectMemorySize=32m"
+    logging: *logging
+
+  web:
+    image: coupon-hanjang-web:${RELEASE:?Set RELEASE in .env}
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 64m
+    memswap_limit: 128m
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logging
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
